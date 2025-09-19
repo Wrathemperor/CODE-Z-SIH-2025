@@ -145,7 +145,7 @@ Ensure the training datasets `Data(Nosem).csv` and `Data(Sem-2).csv` are in the 
 
 -----
 
-## 🧑 Running the Application & Usage
+##  Running the Application & Usage
 
 ### 1\. Start the Server
 
