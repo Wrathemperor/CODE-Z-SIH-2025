@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction Dashboard{% endblock %}
+
+{% block content %}
+<div class="absolute inset-0 -z-10 overflow-hidden">
+    <div class="floating-icon" style="left: 10%; top: 20%; animation-duration: 18s;"><i data-lucide="bar-chart-3" class="w-12 h-12 text-red-500"></i></div>
+    <div class="floating-icon" style="left: 80%; top: 30%; animation-duration: 22s;"><i data-lucide="users" class="w-16 h-16 text-blue-500"></i></div>
+    <div class="floating-icon" style="left: 25%; top: 70%; animation-duration: 25s;"><i data-lucide="alert-triangle" class="w-8 h-8 text-yellow-500"></i></div>
+    <div class="floating-icon" style="left: 90%; top: 80%; animation-duration: 15s;"><i data-lucide="check-circle" class="w-10 h-10 text-green-500"></i></div>
+</div>
+
+<div id="loading-spinner" class="text-center py-20">
+    <div class="w-12 h-12 mx-auto bg-gray-900 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
+        <i data-lucide="bar-chart-3" class="text-white w-6 h-6"></i>
+    </div>
+    <p class="font-poppins text-gray-600 dark:text-gray-400 mt-4" data-lang-en="Loading dashboard data..." data-lang-hi="डैशबोर्ड डेटा लोड हो रहा है...">Loading dashboard data...</p>
+</div>
+
+<div id="dashboard-content" class="hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-6 chart-container transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+            <h3 class="font-playfair text-lg font-bold text-gray-900 dark:text-gray-100 mb-4" data-lang-en="Risk Distribution by Course" data-lang-hi="कोर्स के अनुसार जोखिम वितरण">Risk Distribution by Course</h3>
+            <div class="h-80">
+              <canvas id="courseRiskChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-6 chart-container transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+            <h3 class="font-playfair text-lg font-bold text-gray-900 dark:text-gray-100 mb-4" data-lang-en="Performance of High-Risk Students" data-lang-hi="उच्च जोखिम वाले छात्रों का प्रदर्शन">Performance of High-Risk Students</h3>
+            <div class="h-80">
+              <canvas id="semesterRiskChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        <div class="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200/80 dark:border-gray-700/80">
+            <div>
+                <h2 class="font-playfair text-xl font-bold text-gray-900 dark:text-gray-100" data-lang-en="Student Predictions" data-lang-hi="छात्र भविष्यवाणियां">Student Predictions</h2>
+                <p class="font-poppins text-sm text-gray-600 dark:text-gray-400 mt-1" data-lang-en="Review and sort student risk profiles." data-lang-hi="छात्र जोखिम प्रोफाइल की समीक्षा और छंटाई करें।">Review and sort student risk profiles.</p>
+            </div>
+            <div class="flex items-center gap-4 flex-wrap justify-end">
+                 <div class="relative">
+                    <select id="sort-select" class="font-poppins text-sm bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-full px-4 py-2 appearance-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-500 transition">
+                    </select>
+                    <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 dark:text-gray-400"></i>
+                </div>
+                 <button id="manage-attendance-btn" class="flex items-center gap-2 bg-purple-600 text-white font-poppins font-medium px-4 py-2 rounded-full hover:bg-purple-700 transition-colors duration-200 text-sm">
+                    <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                    <span data-lang-en="Manage Attendance" data-lang-hi="उपस्थिति प्रबंधित करें">Manage Attendance</span>
+                </button>
+                 <a href="{{ url_for('counselling') }}" class="flex items-center gap-2 bg-blue-600 text-white font-poppins font-medium px-4 py-2 rounded-full hover:bg-blue-700 transition-colors duration-200 text-sm">
+                    <i data-lucide="calendar-check" class="w-4 h-4"></i>
+                    <span data-lang-en="Counselling Schedule" data-lang-hi="परामर्श अनुसूची">Counselling Schedule</span>
+                </a>
+                <a href="{{ url_for('download_excel') }}" class="flex items-center gap-2 bg-gray-900 text-white font-poppins font-medium px-4 py-2 rounded-full hover:bg-gray-800 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-gray-300 transition-colors duration-200 text-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span data-lang-en="Download Report" data-lang-hi="रिपोर्ट डाउनलोड करें">Download Report</span>
+                </a>
+            </div>
+        </div>
+        
+        <div class="p-2 overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Student ID" data-lang-hi="छात्र आईडी">Student ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Student Name" data-lang-hi="छात्र का नाम">Student Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Course" data-lang-hi="कोर्स">Course</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Risk Level" data-lang-hi="जोखिम स्तर">Risk Level</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Probability" data-lang-hi="संभावना">Probability</th>
+                        <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider" data-lang-en="Actions" data-lang-hi="कार्रवाई">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body" class="divide-y divide-gray-200/80 dark:divide-gray-700/80">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="attendance-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 w-full max-w-lg relative transform transition-all">
+        <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <h2 class="font-playfair text-2xl font-bold text-gray-900 dark:text-white mb-4" data-lang-en="Upload Weekly Attendance" data-lang-hi="साप्ताहिक उपस्थिति अपलोड करें">Upload Weekly Attendance</h2>
+        <form action="{{ url_for('upload_attendance') }}" method="post" enctype="multipart/form-data" class="space-y-6">
+            <div>
+                <label for="attendance-week" class="font-poppins font-medium text-gray-700 dark:text-gray-300" data-lang-en="Select Week:" data-lang-hi="सप्ताह चुनें:">Select Week:</label>
+                <input type="week" id="attendance-week" class="mt-2 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-full w-full px-4 py-2 focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <input type="hidden" name="week" id="form-week-hidden">
+            
+            <div>
+                <label for="attendance-file" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-lang-en="Attendance File (CSV or Excel)" data-lang-hi="उपस्थिति फ़ाइल (सीएसवी या एक्सेल)">Attendance File (CSV or Excel)</label>
+                <input type="file" id="attendance-file" name="file" required class="block w-full text-sm text-gray-500 dark:text-gray-400
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  dark:file:bg-blue-900/50 dark:file:text-blue-300
+                  hover:file:bg-blue-100 dark:hover:file:bg-blue-900">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" data-lang-en="File must contain 'Student_ID' and subject columns with attendance percentages." data-lang-hi="फ़ाइल में 'Student_ID' और उपस्थिति प्रतिशत वाले विषय कॉलम होने चाहिए।">File must contain 'Student_ID' and subject columns with attendance percentages.</p>
+            </div>
+            <div>
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <span data-lang-en="Upload and Process" data-lang-hi="अपलोड और प्रोसेस करें">Upload and Process</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+    /* ... styles from original file remain the same ... */
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // All existing dashboard JS
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const dashboardContent = document.getElementById('dashboard-content');
+        const sortSelect = document.getElementById('sort-select');
+        let courseRiskChart = null;
+        let semesterRiskChart = null;
+        let allStudents = [];
+        let summaryData = {};
+        let chartData = {};
+        let currentLang = localStorage.getItem('language') || 'en';
+
+        const translations = {
+            en: { totalStudents: 'Total Students', highRisk: 'High Risk', mediumRisk: 'Medium Risk', lowRisk: 'Low Risk', high: 'High', medium: 'Medium', low: 'Low', sortBy: 'Sort by: Default', riskDesc: 'Risk: High to Low', riskAsc: 'Risk: Low to High', probDesc: 'Probability: High to Low', viewDetails: 'View Details', noData: 'No student data to display.', sem1: '1st Semester', sem2: '2nd Semester', avgUnits: 'Avg. Approved Units'},
+            hi: { totalStudents: 'कुल छात्र', highRisk: 'उच्च जोखिम', mediumRisk: 'मध्यम जोखिम', lowRisk: 'कम जोखिम', high: 'उच्च', medium: 'मध्यम', low: 'कम', sortBy: 'क्रमबद्ध करें: डिफ़ॉल्ट', riskDesc: 'जोखिम: उच्च से निम्न', riskAsc: 'जोखिम: निम्न से उच्च', probDesc: 'संभावना: उच्च से निम्न', viewDetails: 'विवरण देखें', noData: 'प्रदर्शित करने के लिए कोई छात्र डेटा नहीं है।', sem1: 'पहला सेमेस्टर', sem2: 'दूसरा सेमेस्टर', avgUnits: 'औसत स्वीकृत इकाइयां'}
+        };
+
+        function populateSortOptions() {
+            sortSelect.innerHTML = `<option value="default">${translations[currentLang].sortBy}</option><option value="risk-desc">${translations[currentLang].riskDesc}</option><option value="risk-asc">${translations[currentLang].riskAsc}</option><option value="prob-desc">${translations[currentLang].probDesc}</option>`;
+        }
+
+        function getThemeColors() {
+            const isDark = document.documentElement.classList.contains('dark');
+            return { legend: isDark ? '#f9fafb' : '#374151', borderColor: isDark ? '#1e293b' : '#ffffff', grid: isDark ? '#374151' : '#e5e7eb' };
+        }
+
+        function renderCourseBarChart() {
+            const canvas = document.getElementById('courseRiskChart');
+            if (!canvas || !chartData.course_vs_risk) return;
+            if (courseRiskChart) courseRiskChart.destroy();
+            const themeColors = getThemeColors();
+            const translatedDatasets = chartData.course_vs_risk.datasets.map(ds => ({...ds, label: translations[currentLang][ds.label.replace(' Risk','').toLowerCase()+'Risk']}));
+            courseRiskChart = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: { labels: chartData.course_vs_risk.labels, datasets: translatedDatasets },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, ticks: { color: themeColors.legend }, grid: { display: false } }, y: { stacked: true, ticks: { color: themeColors.legend }, grid: { color: themeColors.grid } } }, plugins: { legend: { position: 'bottom', labels: { color: themeColors.legend } } } }
+            });
+        }
+        
+        function renderSemesterBarChart() {
+            const canvas = document.getElementById('semesterRiskChart');
+            if (!canvas || !chartData.semester_performance_high_risk) return;
+            if (semesterRiskChart) semesterRiskChart.destroy();
+            const themeColors = getThemeColors();
+            const translatedLabels = chartData.semester_performance_high_risk.labels.map(label => label.includes('1st') ? translations[currentLang].sem1 : translations[currentLang].sem2);
+            
+            semesterRiskChart = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: { 
+                    labels: translatedLabels, 
+                    datasets: chartData.semester_performance_high_risk.datasets 
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: themeColors.legend }, grid: { display: false } },
+                        y: { ticks: { color: themeColors.legend }, grid: { color: themeColors.grid }, title: { display: true, text: translations[currentLang].avgUnits, color: themeColors.legend } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function displaySummaryCards() {
+            const container = document.querySelector('#dashboard-content .grid');
+            container.innerHTML = `
+                <div class="summary-card bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1" style="animation-delay: 0.1s;"><div><div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0 flex items-center justify-center"><i data-lucide="users" class="w-6 h-6 text-gray-600 dark:text-gray-300"></i></div></div><div><p class="font-poppins text-sm text-gray-600 dark:text-gray-400">${translations[currentLang].totalStudents}</p><p class="font-poppins text-3xl font-bold text-gray-900 dark:text-gray-100">${summaryData.total_students}</p></div></div>
+                <div class="summary-card bg-red-100/50 dark:bg-red-900/20 backdrop-blur-xl rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1" style="animation-delay: 0.2s;"><div><div class="w-12 h-12 bg-red-200 dark:bg-red-800/50 rounded-full flex-shrink-0 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-6 h-6 text-red-600 dark:text-red-300"></i></div></div><div><p class="font-poppins text-sm text-red-700 dark:text-red-300">${translations[currentLang].highRisk}</p><p class="font-poppins text-3xl font-bold text-red-900 dark:text-red-200">${summaryData.high_risk}</p></div></div>
+                <div class="summary-card bg-yellow-100/50 dark:bg-yellow-900/20 backdrop-blur-xl rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1" style="animation-delay: 0.3s;"><div><div class="w-12 h-12 bg-yellow-200 dark:bg-yellow-800/50 rounded-full flex-shrink-0 flex items-center justify-center"><i data-lucide="info" class="w-6 h-6 text-yellow-600 dark:text-yellow-300"></i></div></div><div><p class="font-poppins text-sm text-yellow-700 dark:text-yellow-300">${translations[currentLang].mediumRisk}</p><p class="font-poppins text-3xl font-bold text-yellow-900 dark:text-yellow-200">${summaryData.medium_risk}</p></div></div>
+                <div class="summary-card bg-green-100/50 dark:bg-green-900/20 backdrop-blur-xl rounded-2xl p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1" style="animation-delay: 0.4s;"><div><div class="w-12 h-12 bg-green-200 dark:bg-green-800/50 rounded-full flex-shrink-0 flex items-center justify-center"><i data-lucide="check-circle" class="w-6 h-6 text-green-600 dark:text-green-300"></i></div></div><div><p class="font-poppins text-sm text-green-700 dark:text-green-300">${translations[currentLang].lowRisk}</p><p class="font-poppins text-3xl font-bold text-green-900 dark:text-green-200">${summaryData.low_risk}</p></div></div>`;
+        }
+        
+        function displayStudents(students) {
+            const tableBody = document.getElementById('student-table-body');
+            tableBody.innerHTML = '';
+            if (students.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-10">${translations[currentLang].noData}</td></tr>`;
+            } else {
+                students.forEach((student, index) => {
+                    const riskKey = student.Risk_Level.toLowerCase();
+                    const riskText = translations[currentLang][riskKey];
+                    const row = document.createElement('tr');
+                    row.className = `transition-colors duration-200 ${riskKey === 'high' ? 'bg-red-100/50 dark:bg-red-900/20' : riskKey === 'medium' ? 'bg-yellow-100/50 dark:bg-yellow-900/20' : 'bg-green-100/50 dark:bg-green-900/20'}`;
+                    row.style.animationDelay = `${index * 0.03}s`;
+                    row.innerHTML = `
+                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">${student['Student ID'] || 'N/A'}</td>
+                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">${student['Student Name'] || 'N/A'}</td>
+                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">${student.Course || 'N/A'}</td>
+                        <td class="px-4 py-4"><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${riskKey === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' : riskKey === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'}">${riskText}</span></td>
+                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">${(student.Dropout_Probability * 100).toFixed(1)}%</td>
+                        <td class="px-4 py-4"><a href="/student/${student.internal_id}" class="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium"><i data-lucide="eye" class="w-4 h-4"></i>${translations[currentLang].viewDetails}</a></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        async function initializeDashboard() {
+            try {
+                const [dashRes, chartRes] = await Promise.all([ fetch('/api/dashboard-data'), fetch('/api/chart-data') ]);
+                if (!dashRes.ok || !chartRes.ok) throw new Error('Failed to load dashboard data.');
+                
+                const dashData = await dashRes.json();
+                chartData = await chartRes.json();
+
+                summaryData = dashData.summary;
+                allStudents = dashData.students;
+                
+                populateSortOptions();
+                displaySummaryCards();
+                displayStudents(allStudents);
+                renderCourseBarChart();
+                renderSemesterBarChart();
+
+                loadingSpinner.classList.add('hidden');
+                dashboardContent.classList.remove('hidden');
+                lucide.createIcons();
+            } catch (error) {
+                loadingSpinner.innerHTML = `<p class="font-poppins text-red-600">${error.message}</p>`;
+            }
+        }
+
+        sortSelect.addEventListener('change', (e) => {
+            const sortBy = e.target.value;
+            let sorted = [...allStudents];
+            const riskOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+            if (sortBy === 'risk-desc') sorted.sort((a, b) => riskOrder[b.Risk_Level] - riskOrder[a.Risk_Level]);
+            else if (sortBy === 'risk-asc') sorted.sort((a, b) => riskOrder[a.Risk_Level] - riskOrder[b.Risk_Level]);
+            else if (sortBy === 'prob-desc') sorted.sort((a, b) => b.Dropout_Probability - a.Dropout_Probability);
+            displayStudents(sorted);
+        });
+        
+        document.addEventListener('languageChange', (e) => {
+            currentLang = e.detail.lang;
+            populateSortOptions();
+            displaySummaryCards();
+            displayStudents(allStudents);
+            renderCourseBarChart();
+            renderSemesterBarChart();
+        });
+
+        document.addEventListener('themeChange', () => {
+            setTimeout(() => {
+                renderCourseBarChart();
+                renderSemesterBarChart();
+            }, 50);
+        });
+
+        initializeDashboard();
+
+        // --- NEW: Attendance Modal Logic ---
+        const modal = document.getElementById('attendance-modal');
+        const openModalBtn = document.getElementById('manage-attendance-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const weekPicker = document.getElementById('attendance-week');
+        const hiddenWeekInput = document.getElementById('form-week-hidden');
+
+        // Function to get the current week in YYYY-W## format
+        function getCurrentWeek() {
+            const date = new Date();
+            date.setHours(0, 0, 0, 0);
+            // Thursday in current week decides the year.
+            date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+            // January 4 is always in week 1.
+            const week1 = new Date(date.getFullYear(), 0, 4);
+            // Adjust to Thursday in week 1 and count number of weeks from date to week1.
+            const weekNumber = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+            const year = date.getFullYear();
+            return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
+        }
+
+        // Set initial values and sync
+        function syncWeekValue() {
+            hiddenWeekInput.value = weekPicker.value;
+        }
+        
+        weekPicker.value = getCurrentWeek();
+        syncWeekValue();
+        weekPicker.addEventListener('input', syncWeekValue);
+
+        // Modal open/close listeners
+        openModalBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+        closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    });
+</script>
+{% endblock %}

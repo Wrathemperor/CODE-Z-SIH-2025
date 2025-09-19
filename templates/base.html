@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Student Dropout Predictor{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .font-playfair { font-family: 'Playfair Display', serif; }
+        .font-poppins { font-family: 'Poppins', 'Noto Sans Devanagari', sans-serif; }
+        body { background-color: #f8fafc; }
+        html.dark body { background-color: #0f172a; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-900 font-poppins">
+    <header class="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-16">
+            <div class="flex items-center justify-between h-full">
+                <a href="{{ url_for('index') }}" class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-900 dark:bg-gray-700 flex items-center justify-center">
+                        <i data-lucide="bar-chart-3" class="text-white w-4 h-4" stroke-width="2"></i>
+                    </div>
+                    <span class="font-playfair text-xl font-bold text-gray-900 dark:text-gray-100" data-lang-en="Student Dropout Predictor" data-lang-hi="छात्र ड्रॉपआउट प्रणाली">
+                        Student Dropout Predictor
+                    </span>
+                </a>
+                <div class="flex items-center space-x-4">
+                    {% if current_user.is_authenticated %}
+                         <a href="{{ url_for('logout') }}" class="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-poppins text-sm">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                            <span data-lang-en="Logout" data-lang-hi="लॉग आउट">Logout</span>
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="font-poppins text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Log In</a>
+                        <a href="{{ url_for('register') }}" class="font-poppins text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-full">Register</a>
+                    {% endif %}
+
+                     <button id="theme-toggle" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                        <i data-lucide="sun" class="w-5 h-5 block dark:hidden"></i>
+                        <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+                    </button>
+                    <button id="lang-toggle" class="text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">EN | HI</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="py-8">
+        <div class="max-w-7xl mx-auto px-6">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="bg-{{ 'red' if category == 'danger' else ('yellow' if category == 'warning' else ('green' if category == 'success' else 'blue')) }}-100 border-l-4 border-{{ 'red' if category == 'danger' else ('yellow' if category == 'warning' else ('green' if category == 'success' else 'blue')) }}-500 text-{{ 'red' if category == 'danger' else ('yellow' if category == 'warning' else ('green' if category == 'success' else 'blue')) }}-700 p-4 mb-6 rounded-lg shadow-md" role="alert">
+                        <p class="font-bold">{{ category.title() }}</p>
+                        <p>{{ message }}</p>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <script>
+      lucide.createIcons();
+
+      const themeToggle = document.getElementById('theme-toggle');
+      const langToggle = document.getElementById('lang-toggle');
+      
+      const applyTheme = (theme) => {
+          if (theme === 'dark') {
+              document.documentElement.classList.add('dark');
+          } else {
+              document.documentElement.classList.remove('dark');
+          }
+          document.dispatchEvent(new CustomEvent('themeChange'));
+      };
+
+      const applyLang = (lang) => {
+          document.querySelectorAll('[data-lang-en]').forEach(el => {
+              if (lang === 'hi') {
+                  el.innerText = el.dataset.langHi || el.dataset.langEn;
+              } else {
+                  el.innerText = el.dataset.langEn;
+              }
+          });
+          document.documentElement.lang = lang;
+          localStorage.setItem('language', lang);
+          document.dispatchEvent(new CustomEvent('languageChange', { detail: { lang: lang } }));
+      };
+      
+      themeToggle.addEventListener('click', () => {
+          const isDark = document.documentElement.classList.contains('dark');
+          const newTheme = isDark ? 'light' : 'dark';
+          localStorage.setItem('theme', newTheme);
+          applyTheme(newTheme);
+      });
+
+      langToggle.addEventListener('click', () => {
+          const currentLang = localStorage.getItem('language') || 'en';
+          const newLang = currentLang === 'en' ? 'hi' : 'en';
+          applyLang(newLang);
+      });
+
+      const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      applyTheme(savedTheme);
+      
+      const savedLang = localStorage.getItem('language') || 'en';
+      applyLang(savedLang);
+
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

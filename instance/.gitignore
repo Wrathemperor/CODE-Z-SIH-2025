@@ -1,0 +1,21 @@
+# Virtual Environment
+.venv
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database file
+database.db
+instance/
+
+# IDE and OS files
+.vscode/
+.idea/
+*.DS_Store
+
+# Secrets (if you create a .env file later)
+.env

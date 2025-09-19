@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Student Data{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="text-center mb-12">
+        <h1 class="font-playfair text-5xl md:text-6xl font-bold text-gray-900 dark:text-white">
+            <span data-lang-en="Predict Student Outcomes" data-lang-hi="छात्र परिणामों की भविष्यवाणी करें">Predict Student Outcomes</span>
+        </h1>
+        <p class="font-poppins text-lg text-gray-600 dark:text-gray-300 mt-6 max-w-3xl mx-auto" data-lang-en="Upload your student data file to our secure SVM model to identify at-risk students and generate actionable insights." data-lang-hi="जोखिम वाले छात्रों की पहचान करने और कार्रवाई योग्य अंतर्दृष्टि उत्पन्न करने के लिए हमारे सुरक्षित एसवीएम मॉडल पर अपनी छात्र डेटा फ़ाइल अपलोड करें।">
+            Upload your student data file to our secure SVM model to identify at-risk students and generate actionable insights.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+        <div class="lg:col-span-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-8">
+            <form id="upload-form" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-center" data-lang-en="1. Select Data Type" data-lang-hi="१. डेटा प्रकार चुनें">1. Select Data Type</h4>
+                    <div class="flex justify-center gap-6 bg-gray-100 dark:bg-slate-700 p-2 rounded-full">
+                        <label class="flex-1 text-center">
+                            <input type="radio" name="data_type" value="2sem" checked class="sr-only peer data-type-radio">
+                            <div class="cursor-pointer font-medium text-gray-600 dark:text-gray-400 peer-checked:bg-white dark:peer-checked:bg-slate-800 peer-checked:text-blue-600 dark:peer-checked:text-blue-400 peer-checked:shadow-md py-2 px-4 rounded-full transition-all" data-lang-en="2 Semesters" data-lang-hi="२ सेमेस्टर">2 Semesters</div>
+                        </label>
+                        <label class="flex-1 text-center">
+                             <input type="radio" name="data_type" value="1sem" class="sr-only peer data-type-radio">
+                            <div class="cursor-pointer font-medium text-gray-600 dark:text-gray-400 peer-checked:bg-white dark:peer-checked:bg-slate-800 peer-checked:text-blue-600 dark:peer-checked:text-blue-400 peer-checked:shadow-md py-2 px-4 rounded-full transition-all" data-lang-en="1 Semester" data-lang-hi="१ सेमेस्टर">1 Semester</div>
+                        </label>
+                    </div>
+                </div>
+
+                <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-center" data-lang-en="2. Upload Your File" data-lang-hi="२. अपनी फ़ाइल अपलोड करें">2. Upload Your File</h4>
+                <div id="drop-zone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 text-center transition-all duration-300 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-700">
+                    <div id="initial-state">
+                        <div class="w-16 h-16 mx-auto bg-gray-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
+                            <i data-lucide="upload-cloud" class="text-gray-600 dark:text-gray-300 w-8 h-8"></i>
+                        </div>
+                        <h3 class="font-poppins font-semibold text-lg text-gray-900 dark:text-white" data-lang-en="Upload Student Data" data-lang-hi="छात्र डेटा अपलोड करें">Upload Student Data</h3>
+                        <p class="font-poppins text-gray-500 dark:text-gray-400 mt-1" data-lang-en="Drag & drop or click to browse" data-lang-hi="खींचें और छोड़ें या ब्राउज़ करने के लिए क्लिक करें">Drag & drop or click to browse</p>
+                        <p id="error-message" class="text-red-500 text-sm mt-2 font-medium"></p>
+                    </div>
+                    <div id="file-selected-state" class="hidden text-left">
+                        <div class="flex items-center bg-gray-100 dark:bg-slate-700 rounded-lg p-4">
+                            <i data-lucide="file-check-2" class="w-10 h-10 text-green-500 flex-shrink-0"></i>
+                            <div class="ml-4 overflow-hidden">
+                                <p id="file-name" class="font-semibold text-gray-800 dark:text-gray-200 truncate"></p>
+                                <p id="file-size" class="text-sm text-gray-500 dark:text-gray-400"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <input type="file" id="file-input" name="file" class="hidden" accept=".csv,.xlsx,.xls">
+                <button type="button" id="predict-btn" class="hidden w-full mt-6 bg-blue-600 text-white font-poppins font-medium px-6 py-4 rounded-full hover:bg-blue-700 transition-transform hover:scale-105 duration-300 text-lg flex items-center justify-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span data-lang-en="Predict Dropout Risk" data-lang-hi="ड्रॉपआउट जोखिम की भविष्यवाणी करें">Predict Dropout Risk</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="lg:col-span-2 bg-gray-50 dark:bg-slate-800 rounded-2xl shadow-lg p-8">
+            <h4 class="font-playfair font-bold text-xl text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+                <span data-lang-en="File Requirements" data-lang-hi="फ़ाइल आवश्यकताएँ">File Requirements</span>
+            </h4>
+            <ul class="space-y-3 text-sm font-poppins text-gray-600 dark:text-gray-400 list-disc list-inside">
+                <li data-lang-en="Format: CSV or Excel (.csv, .xlsx)" data-lang-hi="प्रारूप: CSV या Excel (.csv, .xlsx)">Format: CSV or Excel (.csv, .xlsx)</li>
+                <li data-lang-en="Must not contain a 'Target' column" data-lang-hi="इसमें 'Target' कॉलम नहीं होना चाहिए">Must not contain a 'Target' column</li>
+                <li data-lang-en="Ensure data type selection matches your file" data-lang-hi="सुनिश्चित करें कि डेटा प्रकार चयन आपकी फ़ाइल से मेल खाता है">Ensure data type selection matches your file</li>
+                 <li data-lang-en="Use the exact integer codes as specified in the reference guide below" data-lang-hi="नीचे दिए गए संदर्भ मार्गदर्शिका में निर्दिष्ट सटीक पूर्णांक कोड का उपयोग करें">Use the exact integer codes as specified in the reference guide below</li>
+            </ul>
+
+            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h5 class="font-poppins font-semibold text-gray-900 dark:text-white text-sm" data-lang-en="Required Columns" data-lang-hi="आवश्यक कॉलम">Required Columns</h5>
+                <p class="font-poppins text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3" data-lang-en="The uploaded file must contain these exact column headers." data-lang-hi="अपलोड की गई फ़ाइल में ये सटीक कॉलम हेडर होने चाहिए।">The uploaded file must contain these exact column headers.</p>
+                <div id="required-columns-display" class="bg-gray-200 dark:bg-slate-700 rounded-lg p-3 text-xs text-gray-800 dark:text-slate-200 overflow-x-auto">
+                    <pre class="font-mono"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-12">
+        <details class="bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg open:ring-1 open:ring-black/5 dark:open:ring-white/10">
+            <summary class="py-4 px-6 font-playfair text-xl font-bold text-gray-900 dark:text-white flex items-center justify-between cursor-pointer">
+                <span data-lang-en="Data File Reference Guide" data-lang-hi="डेटा फ़ाइल संदर्भ मार्गदर्शिका">Data File Reference Guide</span>
+                <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-300"></i>
+            </summary>
+            <div class="px-6 pb-6 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 mb-6" data-lang-en="Use the exact integer codes below for your data file. Long lists are scrollable within each cell." data-lang-hi="अपनी डेटा फ़ाइल के लिए नीचे दिए गए सटीक पूर्णांक कोड का उपयोग करें। लंबी सूचियाँ प्रत्येक सेल के भीतर स्क्रॉल करने योग्य हैं।">
+                    Use the exact integer codes below for your data file. Long lists are scrollable within each cell.
+                </p>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100 dark:bg-slate-700">
+                            <tr>
+                                <th class="w-1/5 px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">Variable</th>
+                                <th class="w-2/5 px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">Values / Encoding</th>
+                                <th class="w-2/5 px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Marital Status</td><td><div class="max-h-32 overflow-y-auto bg-gray-50 dark:bg-slate-800 p-2 rounded-md border border-gray-200 dark:border-gray-600"><pre class="text-xs">1 – Single
+2 – Married
+3 – Widower
+4 – Divorced
+5 – Facto union
+6 – Legally separated</pre></div></td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Student’s marital status.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Gender</td><td class="px-4 py-3">1 – Male<br>0 – Female</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Student's gender.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Age at Enrollment</td><td class="px-4 py-3">Integer (years)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Student age at enrollment.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">International</td><td class="px-4 py-3">1 – Yes<br>0 – No</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Whether the student is international.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Course</td><td><div class="max-h-32 overflow-y-auto bg-gray-50 dark:bg-slate-800 p-2 rounded-md border border-gray-200 dark:border-gray-600"><pre class="text-xs">33 – Biofuel Production Technologies
+171 – Animation and Multimedia Design
+8014 – Social Service (evening)
+9003 – Agronomy
+9070 – Communication Design
+9085 – Veterinary Nursing
+9119 – Informatics Engineering
+9130 – Equinculture
+9147 – Management
+9238 – Social Service
+9254 – Tourism
+9500 – Nursing
+9556 – Oral Hygiene
+9670 – Advertising and Marketing Management
+9773 – Journalism and Communication
+9853 – Basic Education
+9991 – Management (evening)</pre></div></td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Course code for the programme.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Previous Qualification</td><td><div class="max-h-32 overflow-y-auto bg-gray-50 dark:bg-slate-800 p-2 rounded-md border border-gray-200 dark:border-gray-600"><pre class="text-xs">1 – Secondary education
+2 – Higher education - bachelor's degree
+3 – Higher education - degree
+4 – Higher education - master's
+5 – Higher education - doctorate
+6 – Frequency of higher education
+9 – 12th year of schooling - not completed
+10 – 11th year of schooling - not completed
+12 – Other - 11th year of schooling
+14 – 10th year of schooling
+15 – 10th year of schooling - not completed
+19 – Basic education 3rd cycle (9th/10th/11th year) or equiv.
+38 – Basic education 2nd cycle (6th/7th/8th year) or equiv.
+39 – Technological specialization course
+40 – Higher education - degree (1st cycle)
+42 – Professional higher technical course
+43 – Higher education - master (2nd cycle)</pre></div></td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Highest completed qualification.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Previous Qualification (Grade)</td><td class="px-4 py-3">Integer or float</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Grade of the prior qualification.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Displaced</td><td class="px-4 py-3">1 – Yes<br>0 – No</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Whether the student is displaced.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Educational special needs</td><td class="px-4 py-3">1 – Yes<br>0 – No</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Whether the student has special needs.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Debtor</td><td class="px-4 py-3">1 – Yes<br>0 – No</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Whether the student has outstanding debts.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Tuition fees up to date</td><td class="px-4 py-3">1 – Yes<br>0 – No</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Whether fees are paid on time.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Scholarship holder</td><td class="px-4 py-3">1 – Yes<br>0 – No</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Whether the student holds a scholarship.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 1st sem (credited)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Units credited in 1st semester.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 1st sem (enrolled)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Units enrolled in 1st semester.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 1st sem (evaluations)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Evaluations in 1st semester.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 1st sem (approved)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Units approved in 1st semester.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 1st sem (grade)</td><td class="px-4 py-3">Float (0-20)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Average grade in 1st semester.</td></tr>
+                            <tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 1st sem (without evaluations)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Units without evaluations in 1st semester.</td></tr>
+                            <tr class="sem-2-row"><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 2nd sem (credited)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Units credited in 2nd semester.</td></tr>
+                            <tr class="sem-2-row"><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 2nd sem (enrolled)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Units enrolled in 2nd semester.</td></tr>
+                            <tr class="sem-2-row"><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 2nd sem (evaluations)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Evaluations in 2nd semester.</td></tr>
+                            <tr class="sem-2-row"><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 2nd sem (approved)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Units approved in 2nd semester.</td></tr>
+                            <tr class="sem-2-row"><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 2nd sem (grade)</td><td class="px-4 py-3">Float (0-20)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Average grade in 2nd semester.</td></tr>
+                            <tr class="sem-2-row"><td class="px-4 py-3 font-medium text-gray-900 dark:text-white">Curricular units 2nd sem (without evaluations)</td><td class="px-4 py-3">Integer (0+)</td><td class="px-4 py-3 text-gray-600 dark:text-gray-400">Units without evaluations in 2nd semester.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const initialState = document.getElementById('initial-state');
+    const fileSelectedState = document.getElementById('file-selected-state');
+    const fileNameEl = document.getElementById('file-name');
+    const fileSizeEl = document.getElementById('file-size');
+    const predictBtn = document.getElementById('predict-btn');
+    const errorMessage = document.getElementById('error-message');
+    const radioButtons = document.querySelectorAll('.data-type-radio');
+
+    const requiredColumnsDisplay = document.querySelector('#required-columns-display pre');
+    const refGuideRows2Sem = document.querySelectorAll('.sem-2-row');
+
+    const columns_1sem_text = `Student ID\tStudent Name\tParent Mail\tMarital status\tApplication order\tCourse\tDaytime/evening attendance\tPrevious qualification\tPrevious qualification (grade)\tMother's qualification\tFather's qualification\tMother's occupation\tFather's occupation\tDisplaced\tEducational special needs\tDebtor\tTuition fees up to date\tGender\tScholarship holder\tAge at enrollment\tInternational\tCurricular units 1st sem (credited)\tCurricular units 1st sem (enrolled)\tCurricular units 1st sem (evaluations)\tCurricular units 1st sem (approved)\tCurricular units 1st sem (grade)\tCurricular units 1st sem (without evaluations)`;
+    const columns_2sem_text = `\nCurricular units 2nd sem (credited)\tCurricular units 2nd sem (enrolled)\tCurricular units 2nd sem (evaluations)\tCurricular units 2nd sem (approved)\tCurricular units 2nd sem (grade)\tCurricular units 2nd sem (without evaluations)`;
+
+    const updateDynamicContent = (selectedType) => {
+        if (selectedType === '1sem') {
+            requiredColumnsDisplay.textContent = columns_1sem_text;
+            refGuideRows2Sem.forEach(row => row.style.display = 'none');
+        } else {
+            requiredColumnsDisplay.textContent = columns_1sem_text + columns_2sem_text;
+            refGuideRows2Sem.forEach(row => row.style.display = 'table-row');
+        }
+    };
+
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', (event) => {
+            updateDynamicContent(event.target.value);
+        });
+    });
+
+    const handleFileSelect = (file) => {
+        if (!file) return;
+
+        // Basic validation for file type
+        const allowedTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'];
+        if (!allowedTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+            errorMessage.textContent = 'Invalid file type. Please upload CSV or Excel.';
+            return;
+        }
+
+        errorMessage.textContent = '';
+        fileNameEl.textContent = file.name;
+        fileSizeEl.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+        initialState.classList.add('hidden');
+        fileSelectedState.classList.remove('hidden');
+        predictBtn.classList.remove('hidden');
+    };
+
+    dropZone.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            handleFileSelect(fileInput.files[0]);
+        }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-slate-700');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-slate-700');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-slate-700');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect(e.dataTransfer.files[0]);
+        }
+    });
+    
+    predictBtn.addEventListener('click', (e) => {
+        if (fileInput.files.length > 0) {
+            document.getElementById('upload-form').submit();
+        } else {
+            errorMessage.textContent = 'No file selected. Please try again.';
+        }
+    });
+
+    // Toggle chevron icon on details open/close
+    const detailsElement = document.querySelector('details');
+    const summaryIcon = detailsElement.querySelector('i[data-lucide="chevron-down"]');
+    detailsElement.addEventListener('toggle', () => {
+        if (detailsElement.open) {
+            summaryIcon.style.transform = 'rotate(180deg)';
+        } else {
+            summaryIcon.style.transform = 'rotate(0deg)';
+        }
+    });
+
+    // Initial check on page load
+    const initiallyChecked = document.querySelector('.data-type-radio:checked');
+    if (initiallyChecked) {
+        updateDynamicContent(initiallyChecked.value);
+    }
+});
+</script>
+{% endblock %}

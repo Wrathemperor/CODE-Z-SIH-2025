@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Student Attendance{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+<h1 class="font-playfair text-4xl font-bold text-gray-900 dark:text-white" data-lang-en="Student Attendance" data-lang-hi="छात्र उपस्थिति">Student Attendance</h1>
+<div class="flex items-center gap-4">
+<label for="attendance-week" class="font-poppins font-medium text-gray-700 dark:text-gray-300" data-lang-en="Select Week:" data-lang-hi="सप्ताह चुनें:">Select Week:</label>
+<input type="week" id="attendance-week" value="{{ week }}" class="bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-full px-4 py-2 focus:ring-2 focus:ring-blue-500">
+</div>
+</div>
+
+<!-- New Attendance Upload Form -->
+<div class="mb-12 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-6">
+    <h2 class="font-playfair text-xl font-bold text-gray-900 dark:text-white mb-4" data-lang-en="Upload Weekly Attendance" data-lang-hi="साप्ताहिक उपस्थिति अपलोड करें">Upload Weekly Attendance</h2>
+    <form action="{{ url_for('upload_attendance') }}" method="post" enctype="multipart/form-data" class="space-y-4">
+        <input type="hidden" name="week" id="form-week-hidden" value="{{ week }}">
+        <div>
+            <label for="attendance-file" class="block text-sm font-medium text-gray-700 dark:text-gray-300" data-lang-en="Attendance File (CSV or Excel)" data-lang-hi="उपस्थिति फ़ाइल (सीएसवी या एक्सेल)">Attendance File (CSV or Excel)</label>
+            <input type="file" id="attendance-file" name="file" required class="mt-1 block w-full text-sm text-gray-500 dark:text-gray-400
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-full file:border-0
+              file:text-sm file:font-semibold
+              file:bg-blue-50 file:text-blue-700
+              dark:file:bg-blue-900/50 dark:file:text-blue-300
+              hover:file:bg-blue-100 dark:hover:file:bg-blue-900">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" data-lang-en="File must contain 'Student_ID' and subject columns." data-lang-hi="फ़ाइल में 'Student_ID' और विषय कॉलम होने चाहिए।">File must contain 'Student_ID' and subject columns.</p>
+        </div>
+        <div>
+            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-full shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <span data-lang-en="Upload and Process" data-lang-hi="अपलोड और प्रोसेस करें">Upload and Process</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Attendance Summary Table -->
+<div class="bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-6">
+    <h2 class="font-playfair text-xl font-bold text-gray-900 dark:text-white mb-4" data-lang-en="Weekly Attendance Summary" data-lang-hi="साप्ताहिक उपस्थिति सारांश">Weekly Attendance Summary</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full">
+            <thead class="bg-gray-100 dark:bg-slate-700">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase">Student ID</th>
+                    <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase">Name</th>
+                    <th class="px-4 py-3 text-left text-xs font-poppins font-semibold text-gray-500 dark:text-gray-400 uppercase">Avg. Attendance</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200/80 dark:divide-gray-700/80">
+                {% if students_with_attendance %}
+                    {% for student in students_with_attendance %}
+                    <tr>
+                        <td class="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">{{ student['Student ID'] }}</td>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ student['Student Name'] }}</td>
+                        <td class="px-4 py-3 text-sm font-medium {% if student.avg_attendance < 75 %}text-red-500{% else %}text-green-600{% endif %}">
+                            {{ "%.1f"|format(student.avg_attendance) }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center py-10 font-poppins text-gray-500 dark:text-gray-400" data-lang-en="No attendance records for this week." data-lang-hi="इस सप्ताह के लिए कोई उपस्थिति रिकॉर्ड नहीं है।">
+                            No attendance records for this week.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+const weekPicker = document.getElementById('attendance-week');
+const hiddenWeekInput = document.getElementById('form-week-hidden');
+
+function syncWeekValue() {
+    if (hiddenWeekInput) {
+        hiddenWeekInput.value = weekPicker.value;
+    }
+}
+
+syncWeekValue();
+
+weekPicker.addEventListener(&#39;change&#39;, () =&gt; {
+    window.location.href = `/attendance?week=${weekPicker.value}`;
+});
+
+weekPicker.addEventListener(&#39;input&#39;, syncWeekValue);
+
+});
+</script>
+
+{% endblock %}
