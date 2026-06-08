@@ -135,7 +135,7 @@ def generate_remarks(row):
 
 def send_email(parent_email, subject, body):
     if app.config['MAIL_USERNAME'] == 'your_email@gmail.com':
-        print("⚠️ Email not sent: MAIL_USERNAME not configured.")
+        print("[WARNING] Email not sent: MAIL_USERNAME not configured.")
         return False, "Email not configured on server."
     try:
         msg = MIMEMultipart()
@@ -150,7 +150,7 @@ def send_email(parent_email, subject, body):
         server.quit()
         return True, "Email sent successfully."
     except Exception as e:
-        print(f"❌ Failed to send email: {e}")
+        print(f"[ERROR] Failed to send email: {e}")
         return False, str(e)
 
 def create_excel_report(students):
@@ -189,17 +189,17 @@ def load_models_on_startup():
         scaler_1sem = joblib.load('scaler_1sem.joblib')
         label_encoders_1sem = joblib.load('encoders_1sem.joblib')
         model_columns_1sem = joblib.load('model_cols_1sem.joblib')
-        print("✅ 1-Semester models and assets loaded.")
+        print("[INFO] 1-Semester models and assets loaded.")
         
         model_2sem = joblib.load('model_2sem.joblib')
         scaler_2sem = joblib.load('scaler_2sem.joblib')
         label_encoders_2sem = joblib.load('encoders_2sem.joblib')
         model_columns_2sem = joblib.load('model_cols_2sem.joblib')
-        print("✅ 2-Semester models and assets loaded.")
+        print("[INFO] 2-Semester models and assets loaded.")
     except FileNotFoundError as e:
-        print(f"❌ Error loading models: {e}. Make sure you have run the 'train_and_save_models.py' script first.")
+        print(f"[ERROR] Error loading models: {e}. Make sure you have run the 'train_and_save_models.py' script first.")
     except Exception as e:
-        print(f"❌ An unexpected error occurred while loading models: {e}")
+        print(f"[ERROR] An unexpected error occurred while loading models: {e}")
 
 
 def process_student_data(student):
@@ -286,6 +286,7 @@ def index():
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload_file():
+    load_models_lazy()
     data_type = request.form.get('data_type', '2sem')
     model, scaler, encoders, req_cols, model_cols = (model_2sem, scaler_2sem, label_encoders_2sem, REQUIRED_COLUMNS_2SEM, model_columns_2sem) if data_type == '2sem' else (model_1sem, scaler_1sem, label_encoders_1sem, REQUIRED_COLUMNS_1SEM, model_columns_1sem)
     file = request.files.get('file')
@@ -615,20 +616,32 @@ def attendance():
                            students_with_attendance=attendance_details, 
                            subjects=sorted_subjects,
                            current_week=week_str)
-if __name__ == '__main__':
- # --- This function will set up the database and default user ---
-    def create_database_and_user():
-        with app.app_context():
-            db.create_all()
-            if not User.query.filter_by(username='teacher').first():
-                hashed_pw = generate_password_hash('password', method='pbkdf2:sha256')
-                db.session.add(User(username='teacher', password_hash=hashed_pw))
-                db.session.commit()
-                print("Database created and default user added.")
+# --- This function will set up the database and default user ---
+def create_database_and_user():
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username='teacher').first():
+            hashed_pw = generate_password_hash('password', method='pbkdf2:sha256')
+            db.session.add(User(username='teacher', password_hash=hashed_pw))
+            db.session.commit()
+            print("Database created and default user added.")
 
-# --- Call the functions in the global scope for Vercel ---
-create_database_and_user()
-load_models_on_startup()
+# --- Lazy database initialization on the first request ---
+db_initialized = False
+
+@app.before_request
+def initialize_db():
+    global db_initialized
+    if not db_initialized:
+        create_database_and_user()
+        db_initialized = True
+
+# --- Lazy model loading ---
+def load_models_lazy():
+    global model_1sem, scaler_1sem, label_encoders_1sem, model_columns_1sem
+    global model_2sem, scaler_2sem, label_encoders_2sem, model_columns_2sem
+    if model_1sem is None or model_2sem is None:
+        load_models_on_startup()
 
 
 # --- This block remains for local development ---
