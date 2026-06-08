@@ -1,0 +1,12 @@
+# This file configures the build and deployment settings for Netlify.
+[build]
+  command = "pip install -r requirements.txt"
+  functions = "netlify/functions/"
+  publish = "static/"
+
+# This rule redirects all traffic to your single serverless function.
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api"
+  status = 200
+

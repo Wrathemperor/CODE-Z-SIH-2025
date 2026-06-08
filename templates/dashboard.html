@@ -3,12 +3,7 @@
 {% block title %}Prediction Dashboard{% endblock %}
 
 {% block content %}
-<div class="absolute inset-0 -z-10 overflow-hidden">
-    <div class="floating-icon" style="left: 10%; top: 20%; animation-duration: 18s;"><i data-lucide="bar-chart-3" class="w-12 h-12 text-red-500"></i></div>
-    <div class="floating-icon" style="left: 80%; top: 30%; animation-duration: 22s;"><i data-lucide="users" class="w-16 h-16 text-blue-500"></i></div>
-    <div class="floating-icon" style="left: 25%; top: 70%; animation-duration: 25s;"><i data-lucide="alert-triangle" class="w-8 h-8 text-yellow-500"></i></div>
-    <div class="floating-icon" style="left: 90%; top: 80%; animation-duration: 15s;"><i data-lucide="check-circle" class="w-10 h-10 text-green-500"></i></div>
-</div>
+
 
 <div id="loading-spinner" class="text-center py-20">
     <div class="w-12 h-12 mx-auto bg-gray-900 dark:bg-gray-700 rounded-full flex items-center justify-center animate-pulse">
@@ -19,7 +14,7 @@
 
 <div id="dashboard-content" class="hidden">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    </div>
+        </div>
     
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div class="bg-white/50 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-6 chart-container transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
@@ -40,9 +35,13 @@
         <div class="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-gray-200/80 dark:border-gray-700/80">
             <div>
                 <h2 class="font-playfair text-xl font-bold text-gray-900 dark:text-gray-100" data-lang-en="Student Predictions" data-lang-hi="छात्र भविष्यवाणियां">Student Predictions</h2>
-                <p class="font-poppins text-sm text-gray-600 dark:text-gray-400 mt-1" data-lang-en="Review and sort student risk profiles." data-lang-hi="छात्र जोखिम प्रोफाइल की समीक्षा और छंटाई करें।">Review and sort student risk profiles.</p>
+                <p class="font-poppins text-sm text-gray-600 dark:text-gray-400 mt-1" data-lang-en="Review, filter, and sort student risk profiles." data-lang-hi="छात्र जोखिम प्रोफाइल की समीक्षा, फ़िल्टर और छंटाई करें।">Review, filter, and sort student risk profiles.</p>
             </div>
             <div class="flex items-center gap-4 flex-wrap justify-end">
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 dark:text-gray-400"></i>
+                    <input type="text" id="filter-input" placeholder="Filter by Student ID..." class="font-poppins text-sm bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-full pl-9 pr-4 py-2 appearance-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-500 transition">
+                </div>
                  <div class="relative">
                     <select id="sort-select" class="font-poppins text-sm bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-full px-4 py-2 appearance-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-500 transition">
                     </select>
@@ -76,7 +75,7 @@
                     </tr>
                 </thead>
                 <tbody id="student-table-body" class="divide-y divide-gray-200/80 dark:divide-gray-700/80">
-                </tbody>
+                    </tbody>
             </table>
         </div>
     </div>
@@ -119,15 +118,12 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-    /* ... styles from original file remain the same ... */
-</style>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // All existing dashboard JS
         const loadingSpinner = document.getElementById('loading-spinner');
         const dashboardContent = document.getElementById('dashboard-content');
         const sortSelect = document.getElementById('sort-select');
+        const filterInput = document.getElementById('filter-input');
         let courseRiskChart = null;
         let semesterRiskChart = null;
         let allStudents = [];
@@ -237,7 +233,7 @@
                 
                 populateSortOptions();
                 displaySummaryCards();
-                displayStudents(allStudents);
+                applyFiltersAndSort(); // Use the combined function to display initial data
                 renderCourseBarChart();
                 renderSemesterBarChart();
 
@@ -249,21 +245,37 @@
             }
         }
 
-        sortSelect.addEventListener('change', (e) => {
-            const sortBy = e.target.value;
-            let sorted = [...allStudents];
+        function applyFiltersAndSort() {
+            const sortBy = sortSelect.value;
+            const filterValue = filterInput.value.toLowerCase().trim();
+
+            let processedStudents = allStudents;
+            if (filterValue) {
+                processedStudents = allStudents.filter(student =>
+                    (student['Student ID'] || '').toString().toLowerCase().includes(filterValue)
+                );
+            }
+
             const riskOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
-            if (sortBy === 'risk-desc') sorted.sort((a, b) => riskOrder[b.Risk_Level] - riskOrder[a.Risk_Level]);
-            else if (sortBy === 'risk-asc') sorted.sort((a, b) => riskOrder[a.Risk_Level] - riskOrder[b.Risk_Level]);
-            else if (sortBy === 'prob-desc') sorted.sort((a, b) => b.Dropout_Probability - a.Dropout_Probability);
-            displayStudents(sorted);
-        });
+            if (sortBy === 'risk-desc') {
+                processedStudents.sort((a, b) => riskOrder[b.Risk_Level] - riskOrder[a.Risk_Level]);
+            } else if (sortBy === 'risk-asc') {
+                processedStudents.sort((a, b) => riskOrder[a.Risk_Level] - riskOrder[b.Risk_Level]);
+            } else if (sortBy === 'prob-desc') {
+                processedStudents.sort((a, b) => b.Dropout_Probability - a.Dropout_Probability);
+            }
+
+            displayStudents(processedStudents);
+        }
+
+        sortSelect.addEventListener('change', applyFiltersAndSort);
+        filterInput.addEventListener('input', applyFiltersAndSort);
         
         document.addEventListener('languageChange', (e) => {
             currentLang = e.detail.lang;
             populateSortOptions();
             displaySummaryCards();
-            displayStudents(allStudents);
+            applyFiltersAndSort();
             renderCourseBarChart();
             renderSemesterBarChart();
         });
@@ -277,28 +289,23 @@
 
         initializeDashboard();
 
-        // --- NEW: Attendance Modal Logic ---
+        // Attendance Modal Logic
         const modal = document.getElementById('attendance-modal');
         const openModalBtn = document.getElementById('manage-attendance-btn');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const weekPicker = document.getElementById('attendance-week');
         const hiddenWeekInput = document.getElementById('form-week-hidden');
 
-        // Function to get the current week in YYYY-W## format
         function getCurrentWeek() {
             const date = new Date();
             date.setHours(0, 0, 0, 0);
-            // Thursday in current week decides the year.
             date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-            // January 4 is always in week 1.
             const week1 = new Date(date.getFullYear(), 0, 4);
-            // Adjust to Thursday in week 1 and count number of weeks from date to week1.
             const weekNumber = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
             const year = date.getFullYear();
             return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
         }
 
-        // Set initial values and sync
         function syncWeekValue() {
             hiddenWeekInput.value = weekPicker.value;
         }
@@ -307,7 +314,6 @@
         syncWeekValue();
         weekPicker.addEventListener('input', syncWeekValue);
 
-        // Modal open/close listeners
         openModalBtn.addEventListener('click', () => modal.classList.remove('hidden'));
         closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
         modal.addEventListener('click', (e) => {

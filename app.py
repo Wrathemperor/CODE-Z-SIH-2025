@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import io
 import smtplib
+import joblib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from sklearn.svm import SVC
@@ -23,8 +24,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your_email@gmail.com'
-app.config['MAIL_PASSWORD'] = 'your_app_password'
+app.config['MAIL_USERNAME'] = 'macroinvincible@gmail.com'
+app.config['MAIL_PASSWORD'] = 'zdtm bruu chis fibz'
 
 
 db = SQLAlchemy(app)
@@ -97,29 +98,31 @@ def _preprocess_data(df, is_training=True, encoders=None, fit_scaler=None, model
             if col in processed_df.columns:
                 known_labels = list(le.classes_)
                 processed_df[col] = processed_df[col].astype(str).apply(lambda x: x if x in known_labels else '<unknown>')
-                if '<unknown>' not in le.classes_: le.classes_ = np.append(le.classes_, '<unknown>')
+                if '<unknown>' not in le.classes_: 
+                     le.classes_ = np.append(le.classes_, ['<unknown>']) # Correctly append as a list
+                processed_df[col] = le.transform(processed_df[col])
                 processed_df[col] = le.transform(processed_df[col])
         return fit_scaler.transform(processed_df)
 
-def train_svm_model_on_startup():
-    global model_1sem, scaler_1sem, label_encoders_1sem, model_columns_1sem, model_2sem, scaler_2sem, label_encoders_2sem, model_columns_2sem
-    id_cols = ['Student ID', 'Student Name', 'Parent Mail']
-    try:
-        df_1sem_raw = pd.read_csv('Data(Nosem).csv')
-        df_1sem_raw.rename(columns={'Daytime/evening attendance\t': 'Daytime/evening attendance', 'Student Mail': 'Parent Mail'}, inplace=True)
-        X_train, y_train, scaler, encoders, model_cols = _preprocess_data(df_1sem_raw.drop(columns=id_cols, errors='ignore'), is_training=True)
-        scaler_1sem, label_encoders_1sem, model_columns_1sem = scaler, encoders, model_cols
-        model_1sem = SVC(kernel='rbf', probability=True, class_weight='balanced', random_state=42).fit(X_train, y_train)
-        print("✅ 1-Semester SVM model trained successfully.")
-    except Exception as e: print(f"❌ Error training 1-Semester model: {e}")
-    try:
-        df_2sem_raw = pd.read_csv('Data(Sem-2).csv')
-        df_2sem_raw.rename(columns={'Daytime/evening attendance\t': 'Daytime/evening attendance', 'Student Mail': 'Parent Mail'}, inplace=True)
-        X_train, y_train, scaler, encoders, model_cols = _preprocess_data(df_2sem_raw.drop(columns=id_cols, errors='ignore'), is_training=True)
-        scaler_2sem, label_encoders_2sem, model_columns_2sem = scaler, encoders, model_cols
-        model_2sem = SVC(kernel='rbf', probability=True, class_weight='balanced', random_state=42).fit(X_train, y_train)
-        print("✅ 2-Semester SVM model trained successfully.")
-    except Exception as e: print(f"❌ Error training 2-Semester model: {e}")
+# def train_svm_model_on_startup():
+#     global model_1sem, scaler_1sem, label_encoders_1sem, model_columns_1sem, model_2sem, scaler_2sem, label_encoders_2sem, model_columns_2sem
+#     id_cols = ['Student ID', 'Student Name', 'Parent Mail']
+#     try:
+#         df_1sem_raw = pd.read_csv('Data(Nosem).csv')
+#         df_1sem_raw.rename(columns={'Daytime/evening attendance\t': 'Daytime/evening attendance', 'Student Mail': 'Parent Mail'}, inplace=True)
+#         X_train, y_train, scaler, encoders, model_cols = _preprocess_data(df_1sem_raw.drop(columns=id_cols, errors='ignore'), is_training=True)
+#         scaler_1sem, label_encoders_1sem, model_columns_1sem = scaler, encoders, model_cols
+#         model_1sem = SVC(kernel='rbf', probability=True, class_weight='balanced', random_state=42).fit(X_train, y_train)
+#         print("✅ 1-Semester SVM model trained successfully.")
+#     except Exception as e: print(f"❌ Error training 1-Semester model: {e}")
+#     try:
+#         df_2sem_raw = pd.read_csv('Data(Sem-2).csv')
+#         df_2sem_raw.rename(columns={'Daytime/evening attendance\t': 'Daytime/evening attendance', 'Student Mail': 'Parent Mail'}, inplace=True)
+#         X_train, y_train, scaler, encoders, model_cols = _preprocess_data(df_2sem_raw.drop(columns=id_cols, errors='ignore'), is_training=True)
+#         scaler_2sem, label_encoders_2sem, model_columns_2sem = scaler, encoders, model_cols
+#         model_2sem = SVC(kernel='rbf', probability=True, class_weight='balanced', random_state=42).fit(X_train, y_train)
+#         print("✅ 2-Semester SVM model trained successfully.")
+#     except Exception as e: print(f"❌ Error training 2-Semester model: {e}")
 
 def generate_remarks(row):
     remarks = []
@@ -172,6 +175,29 @@ def create_excel_report(students):
                         cell.fill = fills[risk_val]
     output.seek(0)
     return output
+
+
+def load_models_on_startup():
+    """Loads pre-trained models and assets from .joblib files."""
+    global model_1sem, scaler_1sem, label_encoders_1sem, model_columns_1sem
+    global model_2sem, scaler_2sem, label_encoders_2sem, model_columns_2sem
+    try:
+        model_1sem = joblib.load('model_1sem.joblib')
+        scaler_1sem = joblib.load('scaler_1sem.joblib')
+        label_encoders_1sem = joblib.load('encoders_1sem.joblib')
+        model_columns_1sem = joblib.load('model_cols_1sem.joblib')
+        print("✅ 1-Semester models and assets loaded.")
+        
+        model_2sem = joblib.load('model_2sem.joblib')
+        scaler_2sem = joblib.load('scaler_2sem.joblib')
+        label_encoders_2sem = joblib.load('encoders_2sem.joblib')
+        model_columns_2sem = joblib.load('model_cols_2sem.joblib')
+        print("✅ 2-Semester models and assets loaded.")
+    except FileNotFoundError as e:
+        print(f"❌ Error loading models: {e}. Make sure you have run the 'train_and_save_models.py' script first.")
+    except Exception as e:
+        print(f"❌ An unexpected error occurred while loading models: {e}")
+
 
 def process_student_data(student):
     raw = student.raw_data
@@ -265,6 +291,8 @@ def upload_file():
         return redirect(url_for('index'))
 
     try:
+        StudentData.query.filter_by(user_id=current_user.id).delete()
+        db.session.commit()
         file_contents = io.BytesIO(file.read())
         df_raw = pd.read_excel(file_contents) if file.filename.endswith(('.xlsx', '.xls')) else pd.read_csv(file_contents)
         df_raw.rename(columns={'Daytime/evening attendance\t': 'Daytime/evening attendance', 'Student Mail': 'Parent Mail'}, inplace=True)
@@ -383,12 +411,12 @@ def upload_attendance():
         if not_found_students:
             flash(f"Could not find the following Student IDs: {', '.join(not_found_students)}", 'warning')
 
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('attendance', week=week_str))
 
     except Exception as e:
         db.session.rollback()
         flash(f'An error occurred while processing the attendance file: {e}', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('attendance', week=week_str))
 
 
 @app.route('/api/assign-counselling', methods=['POST'])
@@ -545,11 +573,61 @@ def download_excel():
 def sample_data():
     return send_file('sample_student_data.csv', as_attachment=True)
 
+# Add this new route to your app.py file
+
+@app.route('/attendance')
+@login_required
+def attendance():
+    # Default to the current week if none is selected
+    current_date = date.today()
+    default_week_str = f"{current_date.isocalendar().year}-W{current_date.isocalendar().week:02d}"
+    week_str = request.args.get('week', default_week_str)
+
+    # Get all students for the current user
+    students = StudentData.query.filter_by(user_id=current_user.id).order_by(StudentData.student_id_str).all()
+    
+    attendance_details = []
+    all_subjects = set()
+
+    for s in students:
+        # Find the attendance record for the student for the selected week
+        att_record = Attendance.query.filter_by(student_data_id=s.id, week_str=week_str).first()
+        attendance_data = att_record.subject_attendance if att_record else {}
+        
+        # Add the subjects from this record to our set of all subjects
+        if attendance_data:
+            all_subjects.update(attendance_data.keys())
+
+        attendance_details.append({
+            'id': s.id,
+            'student_id_str': s.student_id_str,
+            'student_name': s.student_name,
+            'attendance': attendance_data
+        })
+
+    # Create a sorted list of unique subject names for the table headers
+    sorted_subjects = sorted(list(all_subjects))
+
+    return render_template('attendance.html', 
+                           students_with_attendance=attendance_details, 
+                           subjects=sorted_subjects,
+                           current_week=week_str)
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        if not User.query.filter_by(username='teacher').first():
-            db.session.add(User(username='teacher', password_hash=generate_password_hash('password', method='pbkdf2:sha256')))
-            db.session.commit()
-    train_svm_model_on_startup()
+ # --- This function will set up the database and default user ---
+    def create_database_and_user():
+        with app.app_context():
+            db.create_all()
+            if not User.query.filter_by(username='teacher').first():
+                hashed_pw = generate_password_hash('password', method='pbkdf2:sha256')
+                db.session.add(User(username='teacher', password_hash=hashed_pw))
+                db.session.commit()
+                print("Database created and default user added.")
+
+# --- Call the functions in the global scope for Vercel ---
+create_database_and_user()
+load_models_on_startup()
+
+
+# --- This block remains for local development ---
+if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

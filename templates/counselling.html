@@ -19,7 +19,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {% if students %}
             {% for student_details in students %}
-                <div class="student-card bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-6 space-y-4" data-internal-id="{{ student_details.summary.internal_id }}">
+                <div class="student-card bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-lg p-6 space-y-4" data-db-id="{{ student_details.id }}">
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 bg-gray-200 dark:bg-slate-700 rounded-full flex items-center justify-center">
                             <i data-lucide="user" class="w-8 h-8 text-gray-600 dark:text-gray-300"></i>
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.querySelectorAll('.student-card').forEach(card => {
-        const internalId = card.dataset.internalId;
+        const studentDbId = card.dataset.dbId; // **FIXED**: Read the correct database ID
         const rescheduleBtn = card.querySelector('.reschedule-btn');
         const endCounsellingBtn = card.querySelector('.end-counselling-btn');
         const rescheduleForm = card.querySelector('.reschedule-form');
@@ -100,7 +100,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const response = await fetch('/api/end-counselling', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ day: '{{ day }}', internal_id: parseInt(internalId) })
+                        // **FIXED**: Send correct key 'student_db_id'
+                        body: JSON.stringify({ day: '{{ day }}', student_db_id: parseInt(studentDbId) })
                     });
                     const result = await response.json();
                     if (result.success) {
@@ -131,10 +132,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-     old_day: '{{ day }}',
-     new_day: newDate,
-     student_db_id: parseInt(internalId)
- })
+                        old_day: '{{ day }}',
+                        new_day: newDate,
+                        // **FIXED**: Send correct key 'student_db_id'
+                        student_db_id: parseInt(studentDbId)
+                    })
                 });
                 const result = await response.json();
                 feedbackMessage.textContent = result.message;
@@ -155,4 +157,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-

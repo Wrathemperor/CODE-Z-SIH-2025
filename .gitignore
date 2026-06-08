@@ -1,0 +1,45 @@
+# Python
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database and Instance files
+instance/
+*.db
+*.sqlite3
+flask_session/
+
+# Data Files & Spreadsheets
+*.csv
+*.xlsx
+*.xls
+
+# Node / Frontend dependencies
+node_modules/
+package-lock.json
+package.json
+.netlify/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Media/Recordings
+*.mkv
+*.mp4
+*.avi
+*.mov
